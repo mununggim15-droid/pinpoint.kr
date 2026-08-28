@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>한국 장소 찾기 AI</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, "Noto Sans KR", sans-serif;
+            background: linear-gradient(135deg, #eef4ff, #f8fbff);
+            min-height: 100vh;
+            color: #222;
+        }
+
+        .container {
+            width: min(900px, 92%);
+            margin: 0 auto;
+            padding: 60px 0;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 42px;
+            margin-bottom: 12px;
+            color: #1d4ed8;
+        }
+
+        .header p {
+            color: #64748b;
+            font-size: 17px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .upload-box {
+            border: 3px dashed #93c5fd;
+            border-radius: 20px;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: 0.25s;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .upload-box:hover {
+            background: #eff6ff;
+            border-color: #2563eb;
+        }
+
+        .upload-icon {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+
+        .upload-box h2 {
+            margin-bottom: 10px;
+        }
+
+        .upload-box p {
+            color: #64748b;
+        }
+
+        #imageInput {
+            display: none;
+        }
+
+        .preview-container {
+            display: none;
+            margin-top: 25px;
+        }
+
+        .preview-container img {
+            width: 100%;
+            max-height: 500px;
+            object-fit: contain;
+            border-radius: 16px;
+            background: #f1f5f9;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        button {
+            border: none;
+            border-radius: 12px;
+            padding: 15px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .analyze-btn {
+            flex: 1;
+            background: #2563eb;
+            color: white;
+        }
+
+        .analyze-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .reset-btn {
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+        .result {
+            display: none;
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 18px;
+            background: #f8fafc;
+            border-left: 5px solid #2563eb;
+        }
+
+        .result h2 {
+            margin-bottom: 20px;
+            color: #1e40af;
+        }
+
+        .result-item {
+            margin-bottom: 15px;
+        }
+
+        .result-item strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #475569;
+        }
+
+        .result-item span {
+            font-size: 18px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 25px;
+            color: #2563eb;
+            font-weight: bold;
+        }
+
+        .spinner {
+            width: 35px;
+            height: 35px;
+            border: 4px solid #dbeafe;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .notice {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff7ed;
+            border-radius: 12px;
+            color: #9a3412;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 35px 0;
+            }
+
+            .header h1 {
+                font-size: 30px;
+            }
+
+            .card {
+                padding: 18px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1>🇰🇷 한국 장소 찾기 AI</h1>
+        <p>사진을 업로드하면 AI가 사진 속 장소를 분석합니다.</p>
+    </div>
+
+    <div class="card">
+
+        <!-- 업로드 영역 -->
+        <label class="upload-box" for="imageInput">
+            <div class="upload-icon">📷</div>
+            <h2>사진을 업로드하세요</h2>
+            <p>클릭해서 사진을 선택하거나 파일을 여기에 올려주세요.</p>
+            <p>JPG, PNG, WEBP 지원</p>
+        </label>
+
+        <input
+            type="file"
+            id="imageInput"
+            accept="image/*"
+        >
+
+        <!-- 사진 미리보기 -->
+        <div class="preview-container" id="previewContainer">
+            <img id="previewImage" alt="업로드한 사진">
+
+            <div class="button-group">
+                <button
+                    class="analyze-btn"
+                    id="analyzeBtn"
+                >
+                    🔍 장소 분석하기
+                </button>
+
+                <button
+                    class="reset-btn"
+                    id="resetBtn"
+                >
+                    다시 선택
+                </button>
+            </div>
+        </div>
+
+        <!-- 로딩 -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            AI가 사진을 분석하고 있습니다...
+        </div>
+
+        <!-- 결과 -->
+        <div class="result" id="result">
+
+            <h2>📍 AI 분석 결과</h2>
+
+            <div class="result-item">
+                <strong>추정 장소</strong>
+                <span id="placeName">-</span>
+            </div>
+
+            <div class="result-item">
+                <strong>지역</strong>
+                <span id="region">-</span>
+            </div>
+
+            <div class="result-item">
+                <strong>확률</strong>
+                <span id="confidence">-</span>
+            </div>
+
+            <div class="result-item">
+                <strong>AI 설명</strong>
+                <span id="description">-</span>
+            </div>
+
+        </div>
+
+        <div class="notice">
+            ⚠️ 사진만으로 장소를 정확하게 알아내는 것은 어려울 수 있습니다.
+            간판, 건물, 도로 표지판, 랜드마크 등의 정보가 포함되어 있으면
+            AI가 더 정확하게 추정할 수 있습니다.
+        </div>
+
+    </div>
+</div>
+
+
+<script>
+
+    const imageInput = document.getElementById("imageInput");
+    const previewContainer = document.getElementById("previewContainer");
+    const previewImage = document.getElementById("previewImage");
+    const analyzeBtn = document.getElementById("analyzeBtn");
+    const resetBtn = document.getElementById("resetBtn");
+
+    const loading = document.getElementById("loading");
+    const result = document.getElementById("result");
+
+    const placeName = document.getElementById("placeName");
+    const region = document.getElementById("region");
+    const confidence = document.getElementById("confidence");
+    const description = document.getElementById("description");
+
+
+    // 사진 선택
+    imageInput.addEventListener("change", function () {
+
+        const file = this.files[0];
+
+        if (!file) return;
+
+        // 이미지 파일인지 확인
+        if (!file.type.startsWith("image/")) {
+            alert("이미지 파일을 선택해주세요.");
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = function (event) {
+
+            previewImage.src = event.target.result;
+
+            previewContainer.style.display = "block";
+            result.style.display = "none";
+
+        };
+
+        reader.readAsDataURL(file);
+
+    });
+
+
+    // 분석 버튼
+    analyzeBtn.addEventListener("click", async function () {
+
+        const file = imageInput.files[0];
+
+        if (!file) {
+            alert("먼저 사진을 선택해주세요.");
+            return;
+        }
+
+        loading.style.display = "block";
+        result.style.display = "none";
+
+        analyzeBtn.disabled = true;
+
+        try {
+
+            /*
+             * 실제 AI API를 연결하는 부분입니다.
+             *
+             * 현재는 테스트 결과를 보여줍니다.
+             *
+             * 실제 서비스에서는 이 부분을
+             * 자신의 백엔드 API와 연결하세요.
+             */
+
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // 테스트 결과
+            const aiResult = {
+                place: "경복궁",
+                region: "서울특별시 종로구",
+                confidence: "약 87%",
+                description:
+                    "사진에 보이는 전통적인 궁궐 건축 양식과 주변 환경을 분석한 결과 경복궁으로 추정됩니다."
+            };
+
+            placeName.textContent = aiResult.place;
+            region.textContent = aiResult.region;
+            confidence.textContent = aiResult.confidence;
+            description.textContent = aiResult.description;
+
+            result.style.display = "block";
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert("장소 분석 중 오류가 발생했습니다.");
+
+        } finally {
+
+            loading.style.display = "none";
+            analyzeBtn.disabled = false;
+
+        }
+
+    });
+
+
+    // 다시 선택
+    resetBtn.addEventListener("click", function () {
+
+        imageInput.value = "";
+        previewImage.src = "";
+
+        previewContainer.style.display = "none";
+        result.style.display = "none";
+
+        placeName.textContent = "-";
+        region.textContent = "-";
+        confidence.textContent = "-";
+        description.textContent = "-";
+
+    });
+
+</script>
+
+</body>
+</html>
